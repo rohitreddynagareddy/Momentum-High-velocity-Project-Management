@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Momentum - High-Velocity Project Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #5e6ad2;
+            --primary-dark: #3a47b4;
+            --secondary: #22c55e;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --border: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --radius-sm: 4px;
+            --radius-md: 6px;
+            --radius-lg: 8px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            grid-template-rows: 56px 1fr;
+        }
+
+        /* Header Styles */
+        header {
+            grid-column: 1 / 3;
+            background-color: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+            font-size: 18px;
+            color: var(--primary);
+        }
+
+        .logo-icon {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .search-bar {
+            position: relative;
+            margin-left: 24px;
+            flex: 1;
+            max-width: 500px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 12px 8px 36px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background-color: var(--background);
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-left: auto;
+        }
+
+        .command-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 6px 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .command-btn:hover {
+            background-color: var(--background);
+        }
+
+        .command-btn kbd {
+            background-color: var(--background);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 2px 6px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: var(--surface);
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            padding: 16px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar-section {
+            padding: 0 12px;
+            margin-bottom: 24px;
+        }
+
+        .sidebar-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            padding: 8px 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 4px;
+        }
+
+        .nav-item:hover {
+            background-color: var(--background);
+            color: var(--primary);
+        }
+
+        .nav-item.active {
+            background-color: rgba(94, 106, 210, 0.1);
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        .nav-item i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .cycle-progress {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-top: 4px;
+            padding: 0 12px;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 4px;
+            background-color: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 0 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--success);
+            width: 65%;
+        }
+
+        /* Main Content Styles */
+        main {
+            overflow-y: auto;
+            padding: 24px;
+            background-color: var(--background);
+            position: relative;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .content-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+        }
+
+        .filter-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 6px 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-btn:hover {
+            background-color: var(--background);
+        }
+
+        .view-content {
+            display: none;
+        }
+
+        .view-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Kanban View */
+        .kanban-view {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        .kanban-column {
+            background-color: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            padding: 16px;
+            min-height: 600px;
+        }
+
+        .column-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .column-title {
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .issue-count {
+            background-color: var(--background);
+            border-radius: 20px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .issue-card {
+            background-color: white;
+            border-radius: var(--radius-md);
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow-sm);
+            border-left: 3px solid var(--primary);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .issue-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .issue-id {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .issue-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .issue-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .issue-labels {
+            display: flex;
+            gap: 4px;
+        }
+
+        .label {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 20px;
+            background-color: var(--background);
+        }
+
+        .label-bug {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .label-feature {
+            background-color: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .label-performance {
+            background-color: #ffedd5;
+            color: #c2410c;
+        }
+
+        .priority {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .priority-high {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+
+        .priority-medium {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+
+        .priority-low {
+            background-color: #d1fae5;
+            color: #059669;
+        }
+
+        /* Projects View */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            background-color: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            cursor: pointer;
+            border-top: 4px solid var(--primary);
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .project-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .project-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            background-color: rgba(94, 106, 210, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 18px;
+            margin-right: 12px;
+        }
+
+        .project-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .project-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .project-stats {
+            display: flex;
+            gap: 12px;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-weight: 700;
+            font-size: 18px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .project-progress {
+            margin-top: 12px;
+        }
+
+        .progress-container {
+            height: 6px;
+            background-color: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+
+        .progress-value {
+            height: 100%;
+            background-color: var(--success);
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Roadmap View */
+        .roadmap-container {
+            background-color: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .timeline {
+            position: relative;
+            margin-top: 30px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: var(--border);
+            left: 50%;
+            margin-left: -1px;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 50px;
+            width: 100%;
+        }
+
+        .timeline-item:nth-child(even) {
+            padding-left: 50%;
+        }
+
+        .timeline-item:nth-child(odd) {
+            padding-right: 50%;
+        }
+
+        .timeline-content {
+            background-color: white;
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+
+        .timeline-content::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: var(--surface);
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            top: 24px;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-content::before {
+            right: -8px;
+        }
+
+        .timeline-item:nth-child(even) .timeline-content::before {
+            left: -8px;
+        }
+
+        .milestone-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .milestone-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .milestone-projects {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .project-tag {
+            background-color: rgba(94, 106, 210, 0.1);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        /* Reports View */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .metric-card {
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .metric-title {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .metric-trend {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: var(--success);
+        }
+
+        .metric-trend.down {
+            color: var(--danger);
+        }
+
+        .chart-container {
+            background-color: var(--surface);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .chart-placeholder {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Command Palette */
+        .command-palette {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            max-width: 90%;
+            background-color: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            z-index: 1000;
+            display: none;
+        }
+
+        .command-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .command-input {
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 16px;
+            border: none;
+            outline: none;
+            background-color: transparent;
+        }
+
+        .command-results {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .command-group {
+            margin-bottom: 16px;
+        }
+
+        .command-group-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            padding: 8px 16px;
+        }
+
+        .command-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .command-item:hover {
+            background-color: var(--background);
+        }
+
+        .command-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: var(--radius-sm);
+            background-color: var(--background);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            color: var(--primary);
+        }
+
+        .command-details {
+            flex: 1;
+        }
+
+        .command-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .command-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .command-shortcut {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background-color: var(--background);
+            padding: 2px 6px;
+            border-radius: var(--radius-sm);
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .kanban-view {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .metrics-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                display: none;
+            }
+            .kanban-view {
+                grid-template-columns: 1fr;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .content-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            
+            .filters {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon">M</div>
+            <span>Momentum</span>
+        </div>
+        <div class="search-bar">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="Search issues, projects, or people...">
+        </div>
+        <div class="header-actions">
+            <button class="command-btn">
+                <i class="fas fa-terminal"></i>
+                <span>Commands</span>
+                <kbd>⌘K</kbd>
+            </button>
+            <div class="avatar">JD</div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-section">
+            <div class="sidebar-title">Navigation</div>
+            <div class="nav-item active" data-view="issues">
+                <i class="fas fa-tasks"></i>
+                <span>My Issues</span>
+            </div>
+            <div class="nav-item" data-view="projects">
+                <i class="fas fa-project-diagram"></i>
+                <span>Projects</span>
+            </div>
+            <div class="nav-item" data-view="roadmap">
+                <i class="fas fa-road"></i>
+                <span>Roadmap</span>
+            </div>
+            <div class="nav-item" data-view="reports">
+                <i class="fas fa-chart-line"></i>
+                <span>Reports</span>
+            </div>
+            <div class="nav-item" data-view="triage">
+                <i class="fas fa-inbox"></i>
+                <span>Triage</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Projects</div>
+            <div class="nav-item" data-project="web">
+                <i class="fas fa-circle" style="color: #3b82f6;"></i>
+                <span>Web Platform</span>
+            </div>
+            <div class="nav-item" data-project="mobile">
+                <i class="fas fa-circle" style="color: #10b981;"></i>
+                <span>Mobile App</span>
+            </div>
+            <div class="nav-item" data-project="api">
+                <i class="fas fa-circle" style="color: #8b5cf6;"></i>
+                <span>API Services</span>
+            </div>
+            <div class="nav-item" data-project="admin">
+                <i class="fas fa-circle" style="color: #f59e0b;"></i>
+                <span>Admin Dashboard</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Current Cycle</div>
+            <div class="nav-item">
+                <i class="fas fa-sync-alt"></i>
+                <span>Sprint 12</span>
+            </div>
+            <div class="cycle-progress">
+                <span>Jun 10</span>
+                <div class="progress-bar">
+                    <div class="progress-fill"></div>
+                </div>
+                <span>Jun 24</span>
+            </div>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-title">Teams</div>
+            <div class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>Frontend</span>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>Backend</span>
+            </div>
+            <div class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>Design</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main>
+        <!-- Issues View -->
+        <div class="view-content active" id="issues-view">
+            <div class="content-header">
+                <h1 class="content-title">Active Issues</h1>
+                <div class="filters">
+                    <button class="filter-btn">
+                        <i class="fas fa-filter"></i>
+                        <span>Filter</span>
+                    </button>
+                    <button class="filter-btn">
+                        <i class="fas fa-sort"></i>
+                        <span>Sort</span>
+                    </button>
+                    <button class="filter-btn" id="create-issue-btn">
+                        <i class="fas fa-plus"></i>
+                        <span>New Issue</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="kanban-view">
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h2 class="column-title">Backlog</h2>
+                        <span class="issue-count">12</span>
+                    </div>
+                    <div class="issue-card" draggable="true">
+                        <div class="issue-id">WEB-142</div>
+                        <div class="issue-title">Implement dark mode toggle</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-feature">Feature</span>
+                            </div>
+                            <div class="priority priority-medium">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-card" draggable="true">
+                        <div class="issue-id">API-78</div>
+                        <div class="issue-title">Optimize database queries for reporting</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-performance">Performance</span>
+                            </div>
+                            <div class="priority priority-high">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h2 class="column-title">To Do</h2>
+                        <span class="issue-count">8</span>
+                    </div>
+                    <div class="issue-card" draggable="true">
+                        <div class="issue-id">DES-45</div>
+                        <div class="issue-title">Redesign user profile page</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-feature">UI/UX</span>
+                            </div>
+                            <div class="priority priority-low">
+                                <i class="fas fa-arrow-down"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-card" draggable="true">
+                        <div class="issue-id">MOB-112</div>
+                        <div class="issue-title">Implement push notifications</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-feature">Feature</span>
+                            </div>
+                            <div class="priority priority-medium">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h2 class="column-title">In Progress</h2>
+                        <span class="issue-count">6</span>
+                    </div>
+                    <div class="issue-card" draggable="true">
+                        <div class="issue-id">WEB-138</div>
+                        <div class="issue-title">Fix responsive layout issues on mobile</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-bug">Bug</span>
+                            </div>
+                            <div class="priority priority-high">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-card" draggable="true">
+                        <div class="issue-id">API-81</div>
+                        <div class="issue-title">Add rate limiting to public endpoints</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-feature">Security</span>
+                            </div>
+                            <div class="priority priority-high">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h2 class="column-title">Done</h2>
+                        <span class="issue-count">15</span>
+                    </div>
+                    <div class="issue-card" draggable="true">
+                        <div class="issue-id">WEB-136</div>
+                        <div class="issue-title">Implement new authentication flow</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-feature">Feature</span>
+                            </div>
+                            <div class="priority priority-high">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-card" draggable="true">
+                        <div class="issue-id">MOB-108</div>
+                        <div class="issue-title">Fix crash on iOS 15 devices</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-bug">Bug</span>
+                            </div>
+                            <div class="priority priority-high">
+                                <i class="fas fa-arrow-up"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Projects View -->
+        <div class="view-content" id="projects-view">
+            <div class="content-header">
+                <h1 class="content-title">Projects</h1>
+                <div class="filters">
+                    <button class="filter-btn">
+                        <i class="fas fa-filter"></i>
+                        <span>Filter</span>
+                    </button>
+                    <button class="filter-btn">
+                        <i class="fas fa-sort"></i>
+                        <span>Sort</span>
+                    </button>
+                    <button class="filter-btn">
+                        <i class="fas fa-plus"></i>
+                        <span>New Project</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="projects-grid">
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="project-title">Web Platform</div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="project-stats">
+                            <div class="stat">
+                                <div class="stat-value">24</div>
+                                <div class="stat-label">Issues</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">8</div>
+                                <div class="stat-label">Active</div>
+                            </div>
+                        </div>
+                        <div class="project-health">
+                            <span class="status-badge" style="background-color: #d1fae5; color: #059669; padding: 4px 8px; border-radius: 20px; font-size: 12px;">On Track</span>
+                        </div>
+                    </div>
+                    <div class="project-progress">
+                        <div class="progress-container">
+                            <div class="progress-value" style="width: 75%"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>75% complete</span>
+                            <span>Due: Jun 30</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <div class="project-title">Mobile App</div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="project-stats">
+                            <div class="stat">
+                                <div class="stat-value">18</div>
+                                <div class="stat-label">Issues</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">12</div>
+                                <div class="stat-label">Active</div>
+                            </div>
+                        </div>
+                        <div class="project-health">
+                            <span class="status-badge" style="background-color: #ffedd5; color: #c2410c; padding: 4px 8px; border-radius: 20px; font-size: 12px;">At Risk</span>
+                        </div>
+                    </div>
+                    <div class="project-progress">
+                        <div class="progress-container">
+                            <div class="progress-value" style="width: 45%"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>45% complete</span>
+                            <span>Due: Jul 15</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-icon">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div class="project-title">API Services</div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="project-stats">
+                            <div class="stat">
+                                <div class="stat-value">32</div>
+                                <div class="stat-label">Issues</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">14</div>
+                                <div class="stat-label">Active</div>
+                            </div>
+                        </div>
+                        <div class="project-health">
+                            <span class="status-badge" style="background-color: #d1fae5; color: #059669; padding: 4px 8px; border-radius: 20px; font-size: 12px;">On Track</span>
+                        </div>
+                    </div>
+                    <div class="project-progress">
+                        <div class="progress-container">
+                            <div class="progress-value" style="width: 60%"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>60% complete</span>
+                            <span>Due: Aug 1</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <div class="project-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div class="project-title">Admin Dashboard</div>
+                    </div>
+                    <div class="project-meta">
+                        <div class="project-stats">
+                            <div class="stat">
+                                <div class="stat-value">15</div>
+                                <div class="stat-label">Issues</div>
+                            </div>
+                            <div class="stat">
+                                <div class="stat-value">5</div>
+                                <div class="stat-label">Active</div>
+                            </div>
+                        </div>
+                        <div class="project-health">
+                            <span class="status-badge" style="background-color: #d1fae5; color: #059669; padding: 4px 8px; border-radius: 20px; font-size: 12px;">On Track</span>
+                        </div>
+                    </div>
+                    <div class="project-progress">
+                        <div class="progress-container">
+                            <div class="progress-value" style="width: 30%"></div>
+                        </div>
+                        <div class="progress-text">
+                            <span>30% complete</span>
+                            <span>Due: Sep 10</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Roadmap View -->
+        <div class="view-content" id="roadmap-view">
+            <div class="content-header">
+                <h1 class="content-title">Product Roadmap</h1>
+                <div class="filters">
+                    <button class="filter-btn">
+                        <i class="fas fa-calendar"></i>
+                        <span>Q3 2023</span>
+                    </button>
+                    <button class="filter-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>New Cycle</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="roadmap-container">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <div class="milestone-title">Platform Launch</div>
+                            <div class="milestone-date">June 30, 2023</div>
+                            <p>Initial release of the web platform with core functionality.</p>
+                            <div class="milestone-projects">
+                                <span class="project-tag">Web Platform</span>
+                                <span class="project-tag">API Services</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <div class="milestone-title">Mobile App Beta</div>
+                            <div class="milestone-date">July 15, 2023</div>
+                            <p>Release of mobile applications for iOS and Android to beta testers.</p>
+                            <div class="milestone-projects">
+                                <span class="project-tag">Mobile App</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <div class="milestone-title">Admin Dashboard</div>
+                            <div class="milestone-date">August 1, 2023</div>
+                            <p>Release of the admin dashboard for internal team management.</p>
+                            <div class="milestone-projects">
+                                <span class="project-tag">Admin Dashboard</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-content">
+                            <div class="milestone-title">Public Launch</div>
+                            <div class="milestone-date">September 10, 2023</div>
+                            <p>Official public launch with marketing campaign and feature complete platform.</p>
+                            <div class="milestone-projects">
+                                <span class="project-tag">All Projects</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reports View -->
+        <div class="view-content" id="reports-view">
+            <div class="content-header">
+                <h1 class="content-title">Team Performance</h1>
+                <div class="filters">
+                    <button class="filter-btn">
+                        <i class="fas fa-calendar"></i>
+                        <span>Last 30 Days</span>
+                    </button>
+                    <button class="filter-btn">
+                        <i class="fas fa-download"></i>
+                        <span>Export</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-title">Completed Issues</div>
+                    <div class="metric-value">142</div>
+                    <div class="metric-trend">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>12% increase from last month</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Cycle Time</div>
+                    <div class="metric-value">4.2d</div>
+                    <div class="metric-trend">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>18% decrease from last month</span>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-title">Velocity</div>
+                    <div class="metric-value">32</div>
+                    <div class="metric-trend">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>8% increase from last month</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-placeholder">Performance Analytics Chart</div>
+            </div>
+
+            <div class="chart-container" style="margin-top: 20px;">
+                <div class="chart-placeholder">Burndown Chart</div>
+            </div>
+        </div>
+
+        <!-- Triage View -->
+        <div class="view-content" id="triage-view">
+            <div class="content-header">
+                <h1 class="content-title">Triage Inbox</h1>
+                <div class="filters">
+                    <button class="filter-btn">
+                        <i class="fas fa-filter"></i>
+                        <span>Filter</span>
+                    </button>
+                    <button class="filter-btn">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Process All</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="kanban-view">
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h2 class="column-title">New Requests</h2>
+                        <span class="issue-count">9</span>
+                    </div>
+                    <div class="issue-card">
+                        <div class="issue-id">REQ-42</div>
+                        <div class="issue-title">Add support for Japanese language</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-feature">Feature</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="issue-card">
+                        <div class="issue-id">REQ-43</div>
+                        <div class="issue-title">Dashboard loading too slow</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-performance">Performance</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h2 class="column-title">Needs Review</h2>
+                        <span class="issue-count">5</span>
+                    </div>
+                    <div class="issue-card">
+                        <div class="issue-id">BUG-87</div>
+                        <div class="issue-title">Profile image upload fails for PNG files</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-bug">Bug</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h2 class="column-title">Prioritized</h2>
+                        <span class="issue-count">3</span>
+                    </div>
+                    <div class="issue-card">
+                        <div class="issue-id">REQ-39</div>
+                        <div class="issue-title">Implement two-factor authentication</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-feature">Security</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="kanban-column">
+                    <div class="column-header">
+                        <h2 class="column-title">Processed</h2>
+                        <span class="issue-count">12</span>
+                    </div>
+                    <div class="issue-card">
+                        <div class="issue-id">REQ-35</div>
+                        <div class="issue-title">Add dark mode support</div>
+                        <div class="issue-meta">
+                            <div class="issue-labels">
+                                <span class="label label-feature">Feature</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Command Palette -->
+    <div class="overlay" id="overlay"></div>
+    <div class="command-palette" id="commandPalette">
+        <div class="command-header">
+            <input type="text" class="command-input" placeholder="Type a command or search...">
+        </div>
+        <div class="command-results">
+            <div class="command-group">
+                <div class="command-group-title">Navigation</div>
+                <div class="command-item" data-command="issues">
+                    <div class="command-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">Go to My Issues</div>
+                        <div class="command-desc">View your assigned tasks</div>
+                    </div>
+                    <div class="command-shortcut">⌘1</div>
+                </div>
+                <div class="command-item" data-command="projects">
+                    <div class="command-icon">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">Go to Projects</div>
+                        <div class="command-desc">View all active projects</div>
+                    </div>
+                    <div class="command-shortcut">⌘2</div>
+                </div>
+                <div class="command-item" data-command="roadmap">
+                    <div class="command-icon">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">Go to Roadmap</div>
+                        <div class="command-desc">View project timelines</div>
+                    </div>
+                    <div class="command-shortcut">⌘3</div>
+                </div>
+                <div class="command-item" data-command="reports">
+                    <div class="command-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">Go to Reports</div>
+                        <div class="command-desc">View team performance metrics</div>
+                    </div>
+                    <div class="command-shortcut">⌘4</div>
+                </div>
+            </div>
+            <div class="command-group">
+                <div class="command-group-title">Issues</div>
+                <div class="command-item" data-command="create-issue">
+                    <div class="command-icon">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">Create new issue</div>
+                        <div class="command-desc">Add a new task to your project</div>
+                    </div>
+                    <div class="command-shortcut">⌘N</div>
+                </div>
+                <div class="command-item" data-command="search-issues">
+                    <div class="command-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">Search issues</div>
+                        <div class="command-desc">Find tasks across all projects</div>
+                    </div>
+                    <div class="command-shortcut">⌘F</div>
+                </div>
+            </div>
+            <div class="command-group">
+                <div class="command-group-title">Actions</div>
+                <div class="command-item" data-command="new-cycle">
+                    <div class="command-icon">
+                        <i class="fas fa-sync-alt"></i>
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">Start new cycle</div>
+                        <div class="command-desc">Begin a new sprint</div>
+                    </div>
+                </div>
+                <div class="command-item" data-command="new-doc">
+                    <div class="command-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="command-details">
+                        <div class="command-name">Create project doc</div>
+                        <div class="command-desc">Add documentation to a project</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation functionality
+        const navItems = document.querySelectorAll('.nav-item');
+        const viewContents = document.querySelectorAll('.view-content');
+        
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const view = item.getAttribute('data-view');
+                
+                // Update active state
+                navItems.forEach(nav => nav.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Show correct view
+                viewContents.forEach(view => view.classList.remove('active'));
+                document.getElementById(`${view}-view`).classList.add('active');
+            });
+        });
+
+        // Command palette functionality
+        const commandBtn = document.querySelector('.command-btn');
+        const commandPalette = document.getElementById('commandPalette');
+        const overlay = document.getElementById('overlay');
+        const commandInput = document.querySelector('.command-input');
+        const commandItems = document.querySelectorAll('.command-item');
+        
+        function openCommandPalette() {
+            commandPalette.style.display = 'block';
+            overlay.style.display = 'block';
+            setTimeout(() => {
+                commandInput.focus();
+            }, 100);
+        }
+        
+        function closeCommandPalette() {
+            commandPalette.style.display = 'none';
+            overlay.style.display = 'none';
+        }
+        
+        commandBtn.addEventListener('click', openCommandPalette);
+        overlay.addEventListener('click', closeCommandPalette);
+        
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                openCommandPalette();
+            }
+            
+            if (e.key === 'Escape') {
+                closeCommandPalette();
+            }
+            
+            // Keyboard shortcuts for navigation
+            if (e.metaKey || e.ctrlKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        setActiveView('issues');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        setActiveView('projects');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        setActiveView('roadmap');
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        setActiveView('reports');
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        createNewIssue();
+                        break;
+                }
+            }
+        });
+        
+        commandItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const command = item.getAttribute('data-command');
+                executeCommand(command);
+                closeCommandPalette();
+            });
+        });
+        
+        function setActiveView(view) {
+            navItems.forEach(nav => nav.classList.remove('active'));
+            viewContents.forEach(view => view.classList.remove('active'));
+            
+            document.querySelector(`.nav-item[data-view="${view}"]`).classList.add('active');
+            document.getElementById(`${view}-view`).classList.add('active');
+        }
+        
+        function executeCommand(command) {
+            switch(command) {
+                case 'issues':
+                    setActiveView('issues');
+                    break;
+                case 'projects':
+                    setActiveView('projects');
+                    break;
+                case 'roadmap':
+                    setActiveView('roadmap');
+                    break;
+                case 'reports':
+                    setActiveView('reports');
+                    break;
+                case 'create-issue':
+                    createNewIssue();
+                    break;
+                case 'new-cycle':
+                    startNewCycle();
+                    break;
+            }
+        }
+        
+        function createNewIssue() {
+            alert('Opening new issue form...');
+            // In a real app, this would open a modal form
+        }
+        
+        function startNewCycle() {
+            alert('Starting new development cycle...');
+            // In a real app, this would open a configuration modal
+        }
+        
+        // Drag and drop for kanban board
+        const issueCards = document.querySelectorAll('.issue-card');
+        const columns = document.querySelectorAll('.kanban-column');
+        
+        let draggedItem = null;
+        
+        issueCards.forEach(card => {
+            card.addEventListener('dragstart', () => {
+                draggedItem = card;
+                setTimeout(() => {
+                    card.style.opacity = '0.4';
+                }, 0);
+            });
+            
+            card.addEventListener('dragend', () => {
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    draggedItem = null;
+                }, 0);
+            });
+        });
+        
+        columns.forEach(column => {
+            column.addEventListener('dragover', e => {
+                e.preventDefault();
+            });
+            
+            column.addEventListener('dragenter', e => {
+                e.preventDefault();
+                column.style.backgroundColor = 'rgba(94, 106, 210, 0.05)';
+            });
+            
+            column.addEventListener('dragleave', () => {
+                column.style.backgroundColor = '';
+            });
+            
+            column.addEventListener('drop', e => {
+                e.preventDefault();
+                column.style.backgroundColor = '';
+                column.appendChild(draggedItem);
+                
+                // Update issue count
+                const countElement = column.querySelector('.issue-count');
+                countElement.textContent = parseInt(countElement.textContent) + 1;
+                
+                // Find the previous column and update its count
+                const previousColumn = draggedItem.parentElement;
+                const prevCountElement = previousColumn.querySelector('.issue-count');
+                prevCountElement.textContent = parseInt(prevCountElement.textContent) - 1;
+            });
+        });
+        
+        // Sample issue interaction
+        issueCards.forEach(card => {
+            card.addEventListener('click', () => {
+                alert(`Opening issue: ${card.querySelector('.issue-id').textContent}`);
+            });
+        });
+        
+        // Keyboard shortcuts hint
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '?') {
+                alert('Keyboard Shortcuts:\n\n' +
+                      '⌘K - Open command palette\n' +
+                      '⌘N - Create new issue\n' +
+                      '⌘F - Search issues\n' +
+                      '⌘1 - Go to My Issues\n' +
+                      '⌘2 - Go to Projects\n' +
+                      '⌘3 - Go to Roadmap\n' +
+                      '⌘4 - Go to Reports\n' +
+                      'Esc - Close modal/command palette');
+            }
+        });
+    </script>
+</body>
+</html>
