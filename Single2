@@ -1,0 +1,780 @@
+import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
+import { initializeApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, updateDoc, addDoc, serverTimestamp, setLogLevel } from 'firebase/firestore';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
+import { PieChart, Pie, Cell } from 'recharts';
+import { LucideSearch, LucideTerminal, LucidePieChart, LucideCheckSquare, LucideGitBranch, LucideServer, LucideBot, LucideBolt, LucideCloud, LucideHeartPulse, LucideTriangleAlert, LucideCircle, LucideCalendar, LucideFilter, LucideRefreshCw, LucideArrowUp, LucideArrowDown, LucideCheckCircle, LucidePlayCircle, LucidePlus, LucideHistory, Flame, LucideSlidersHorizontal, LucideFileText, LucideCloudUpload, LucideCode, LucideShield } from 'lucide-react';
+
+// --- Firebase Configuration ---
+// This configuration is provided by the environment.
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+// --- Firebase Context ---
+const FirebaseContext = createContext(null);
+
+const useFirebase = () => useContext(FirebaseContext);
+
+const FirebaseProvider = ({ children }) => {
+    const [auth, setAuth] = useState(null);
+    const [db, setDb] = useState(null);
+    const [user, setUser] = useState(null);
+    const [isAuthReady, setIsAuthReady] = useState(false);
+
+    useEffect(() => {
+        setLogLevel('debug');
+        const app = initializeApp(firebaseConfig);
+        const authInstance = getAuth(app);
+        const dbInstance = getFirestore(app);
+        
+        setAuth(authInstance);
+        setDb(dbInstance);
+
+        const unsubscribe = onAuthStateChanged(authInstance, async (firebaseUser) => {
+            if (firebaseUser) {
+                const userDocRef = doc(dbInstance, `/artifacts/${appId}/users/${firebaseUser.uid}`);
+                const userDocSnap = await getDoc(userDocRef);
+                if (!userDocSnap.exists()) {
+                    await setDoc(userDocRef, {
+                        uid: firebaseUser.uid,
+                        displayName: firebaseUser.isAnonymous ? 'Guest User' : (firebaseUser.displayName || 'John Doe'),
+                        initials: firebaseUser.isAnonymous ? 'GU' : 'JD',
+                        createdAt: serverTimestamp(),
+                    });
+                }
+                const userData = userDocSnap.exists() ? userDocSnap.data() : { displayName: 'John Doe', initials: 'JD' };
+                setUser({ ...firebaseUser, ...userData });
+            } else {
+                 try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(authInstance, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(authInstance);
+                    }
+                } catch (error) {
+                    console.error("Error signing in:", error);
+                }
+            }
+            setIsAuthReady(true);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    const value = useMemo(() => ({ auth, db, user, isAuthReady, appId }), [auth, db, user, isAuthReady, appId]);
+
+    return (
+        <FirebaseContext.Provider value={value}>
+            {children}
+        </FirebaseContext.Provider>
+    );
+};
+
+// --- Seed Database Utility ---
+// This function will populate Firestore with initial data if it's empty.
+const seedDatabase = async (db, appId, userId) => {
+    const metricsDocRef = doc(db, `/artifacts/${appId}/public/data/metrics/dashboardMetrics`);
+    const metricsSnap = await getDoc(metricsDocRef);
+
+    if (!metricsSnap.exists()) {
+        console.log("Seeding database with initial data...");
+        // Metrics
+        await setDoc(metricsDocRef, {
+            completedIssues: { value: 142, trend: 12, trendDirection: 'up' },
+            deploymentSuccess: { value: 98.7, trend: 2.3, trendDirection: 'up' },
+            systemUptime: { value: 99.95, trend: 0, trendDirection: 'stable' },
+            activeIncidents: { value: 2, trend: 3, trendDirection: 'down' },
+            buildSuccessRate: { value: 96.4, trend: 1.8, trendDirection: 'up' },
+            avgDeploymentTime: { value: 8.3, trend: 2.1, trendDirection: 'down' },
+            infraChanges: { value: 24, trend: 0, trendDirection: 'stable' },
+            errorBudget: { value: 78, trend: 12, trendDirection: 'down' },
+            mttr: { value: 43, trend: 18, trendDirection: 'down' },
+            lastUpdated: serverTimestamp(),
+        });
+        
+        // Agents
+        const agentsCollectionRef = collection(db, `/artifacts/${appId}/public/data/agents`);
+        await addDoc(agentsCollectionRef, {
+            name: 'CI/CD Automator',
+            role: 'DevOps Agent',
+            type: 'devops',
+            description: 'Automates build, test, and deployment pipelines. Monitors CI/CD workflows and optimizes deployment strategies.',
+            stats: { deployments: 42, successRate: 98.7, avgTime: 12.4 },
+            icon: 'Bolt'
+        });
+        await addDoc(agentsCollectionRef, {
+            name: 'System Health Monitor',
+            role: 'SRE Agent',
+            type: 'sre',
+            description: 'Continuously monitors system health, identifies anomalies, and predicts potential failures before they occur.',
+            stats: { uptime: 99.95, issuesDetected: 24, accuracy: 93 },
+            icon: 'HeartPulse'
+        });
+
+        // Projects
+        const projectsCollectionRef = collection(db, `/artifacts/${appId}/public/data/projects`);
+        await addDoc(projectsCollectionRef, { name: 'Web Platform', color: '#3b82f6', progress: 75 });
+        await addDoc(projectsCollectionRef, { name: 'Mobile App', color: '#10b981', progress: 45 });
+        await addDoc(projectsCollectionRef, { name: 'API Services', color: '#8b5cf6', progress: 60 });
+        await addDoc(projectsCollectionRef, { name: 'Admin Dashboard', color: '#f59e0b', progress: 30 });
+    } else {
+        console.log("Database already contains data. Skipping seed.");
+    }
+};
+
+// --- Icon Mapping ---
+// A helper to dynamically render Lucide icons from strings.
+const iconMap = {
+    PieChart: LucidePieChart,
+    CheckSquare: LucideCheckSquare,
+    GitBranch: LucideGitBranch,
+    Server: LucideServer,
+    Bot: LucideBot,
+    Bolt: LucideBolt,
+    Cloud: LucideCloud,
+    HeartPulse: LucideHeartPulse,
+    TriangleAlert: LucideTriangleAlert,
+    Circle: LucideCircle,
+    Calendar: LucideCalendar,
+    Filter: LucideFilter,
+    RefreshCw: LucideRefreshCw,
+    PlayCircle: LucidePlayCircle,
+    Plus: LucidePlus,
+    History: LucideHistory,
+    Flame: Flame,
+    SlidersHorizontal: LucideSlidersHorizontal,
+    FileText: LucideFileText
+};
+
+const getIcon = (name) => {
+    const Icon = iconMap[name];
+    return Icon ? <Icon /> : <LucideCircle />;
+}
+
+
+// --- Components ---
+
+const AppLoader = () => (
+    <div className="w-full h-screen flex flex-col items-center justify-center bg-slate-900 text-slate-100">
+        <div className="flex items-center gap-4 text-2xl font-bold">
+             <div className="w-10 h-10 bg-indigo-600 rounded-md flex items-center justify-center text-white font-bold text-xl animate-pulse">M+</div>
+             <span>Momentum+</span>
+        </div>
+        <p className="mt-4 text-slate-400">Initializing Enterprise Platform...</p>
+    </div>
+);
+
+const Header = ({ onCommandPaletteOpen }) => {
+    const { user } = useFirebase();
+
+    return (
+        <header className="grid-cols-1 md:grid-cols-[260px_1fr] col-span-2 bg-gradient-to-r from-[#3a47b4] to-[#5e6ad2] flex items-center px-6 z-50 shadow-md">
+            <div className="flex items-center gap-3 font-bold text-xl text-white">
+                <div className="bg-white/20 w-9 h-9 rounded-md flex items-center justify-center backdrop-blur-sm">M+</div>
+                <span className="hidden md:inline">Momentum+</span>
+            </div>
+            <div className="relative ml-8 flex-1 max-w-2xl hidden md:block">
+                <LucideSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-white/80 w-5 h-5" />
+                <input
+                    type="text"
+                    placeholder="Search projects, issues, or agents..."
+                    className="w-full pl-11 pr-4 py-2.5 rounded-lg border-none bg-white/15 text-white placeholder:text-white/70 focus:outline-none focus:bg-white/25 focus:ring-2 focus:ring-white/30 transition-all duration-300"
+                />
+            </div>
+            <div className="flex items-center gap-5 ml-auto">
+                <button
+                    onClick={onCommandPaletteOpen}
+                    className="flex items-center gap-2 bg-white/15 border-none rounded-lg px-4 py-2 text-sm text-white hover:bg-white/25 transition-all duration-300 backdrop-blur-sm"
+                >
+                    <LucideTerminal className="w-4 h-4" />
+                    <span className="hidden sm:inline">Command Hub</span>
+                    <kbd className="hidden sm:inline bg-black/20 border border-white/10 rounded-md px-2 py-0.5 text-xs font-mono">⌘K</kbd>
+                </button>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-500 to-emerald-500 flex items-center justify-center font-semibold text-white cursor-pointer">
+                    {user?.initials || '...'}
+                </div>
+            </div>
+        </header>
+    );
+};
+
+const Sidebar = ({ activeView, setActiveView }) => {
+    const [agents, setAgents] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const { db, appId } = useFirebase();
+
+    const navItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: 'PieChart' },
+        { id: 'issues', label: 'Project Issues', icon: 'CheckSquare' },
+        { id: 'devops', label: 'DevOps Center', icon: 'GitBranch' },
+        { id: 'sre', label: 'SRE Operations', icon: 'Server' },
+        { id: 'agents', label: 'AI Agents', icon: 'Bot' },
+    ];
+    
+    // Fetch agents
+    useEffect(() => {
+        if (!db) return;
+        const q = query(collection(db, `/artifacts/${appId}/public/data/agents`));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const agentData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAgents(agentData);
+        });
+        return () => unsubscribe();
+    }, [db, appId]);
+
+    // Fetch projects
+    useEffect(() => {
+        if (!db) return;
+        const q = query(collection(db, `/artifacts/${appId}/public/data/projects`));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const projectData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setProjects(projectData);
+        });
+        return () => unsubscribe();
+    }, [db, appId]);
+
+    const NavItem = ({ item, isActive, onClick }) => {
+        const Icon = iconMap[item.icon];
+        return (
+            <div
+                onClick={onClick}
+                className={`flex items-center px-4 py-3 rounded-lg text-sm cursor-pointer transition-all duration-300 mb-1.5 ${isActive ? 'bg-gradient-to-r from-indigo-600/30 to-transparent text-slate-100 font-semibold border-l-4 border-indigo-500' : 'text-slate-400 hover:bg-slate-700 hover:text-slate-100'}`}
+            >
+                {Icon && <Icon className="mr-3 w-6 h-6 text-center" />}
+                <span>{item.label}</span>
+            </div>
+        );
+    };
+
+    const SidebarSection = ({ title, children }) => (
+        <div className="px-4 mb-7">
+            <h3 className="text-xs font-bold uppercase text-slate-500 px-4 py-2.5 tracking-wider">{title}</h3>
+            {children}
+        </div>
+    );
+
+    return (
+        <nav className="bg-slate-800 border-r border-slate-700 overflow-y-auto pt-5 flex-col hidden md:flex">
+            <SidebarSection title="Navigation">
+                {navItems.map(item => (
+                    <NavItem key={item.id} item={item} isActive={activeView === item.id} onClick={() => setActiveView(item.id)} />
+                ))}
+            </SidebarSection>
+            
+            <SidebarSection title="Active Agents">
+                {agents.map(agent => (
+                    <div key={agent.id} className={`flex items-center px-4 py-3 rounded-lg text-sm mb-1.5 ${agent.type === 'devops' ? 'text-violet-400' : 'text-emerald-400'}`}>
+                        {getIcon(agent.icon)}
+                        <span className="ml-3">{agent.name}</span>
+                    </div>
+                ))}
+                 <div className="flex items-center gap-2.5 p-3 bg-slate-700/50 rounded-lg mt-4 text-sm">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-slate-300">All systems operational</span>
+                </div>
+            </SidebarSection>
+            
+            <SidebarSection title="Projects">
+                {projects.map(project => (
+                    <div key={project.id} className="flex items-center px-4 py-3 text-sm text-slate-400">
+                        <LucideCircle className="w-3 h-3 mr-3" style={{ color: project.color, fill: project.color }} />
+                        <span>{project.name}</span>
+                    </div>
+                ))}
+            </SidebarSection>
+        </nav>
+    );
+};
+
+const MetricCard = ({ title, value, trend, trendDirection, unit = '', children, cardStyle = 'devops' }) => {
+    const TrendIcon = trendDirection === 'up' ? LucideArrowUp : trendDirection === 'down' ? LucideArrowDown : LucideCheckCircle;
+    const trendColor = trendDirection === 'up' ? 'text-emerald-500' : trendDirection === 'down' ? 'text-red-500' : 'text-emerald-500';
+    const gradient = cardStyle === 'devops' ? 'from-indigo-500 to-violet-500' : 'from-emerald-500 to-sky-500';
+
+    return (
+        <div className="bg-slate-800 rounded-xl shadow-sm p-6 relative overflow-hidden border border-slate-700">
+            <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${gradient}`}></div>
+            <h4 className="text-sm text-slate-400 mb-3">{title}</h4>
+            <div className="text-4xl font-bold mb-2 bg-gradient-to-r from-slate-100 to-indigo-300 text-transparent bg-clip-text">
+                {value}{unit}
+            </div>
+            <div className={`flex items-center text-sm ${trendColor}`}>
+                <TrendIcon className="w-4 h-4 mr-1.5" />
+                {children}
+            </div>
+        </div>
+    );
+};
+
+const AgentCard = ({ agent }) => {
+    const cardColor = agent.type === 'devops' ? 'border-t-violet-500' : 'border-t-emerald-500';
+    const iconBg = agent.type === 'devops' ? 'bg-gradient-to-br from-violet-500 to-purple-700' : 'bg-gradient-to-br from-emerald-500 to-green-700';
+    const Icon = iconMap[agent.icon] || LucideBot;
+
+    return (
+        <div className={`bg-slate-800 rounded-xl p-6 shadow-sm border border-slate-700 ${cardColor} border-t-4 hover:-translate-y-1 hover:shadow-lg hover:border-indigo-500 transition-all duration-300`}>
+            <div className="flex items-center mb-5">
+                <div className={`w-12 h-12 rounded-lg ${iconBg} flex items-center justify-center text-white text-2xl mr-4`}>
+                    <Icon />
+                </div>
+                <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-slate-100 mb-1">{agent.name}</h3>
+                    <p className="text-sm text-slate-400">{agent.role}</p>
+                </div>
+            </div>
+            <p className="text-slate-400 mb-5 leading-relaxed text-sm">{agent.description}</p>
+            <div className="flex gap-4 border-t border-slate-700 pt-4">
+                {Object.entries(agent.stats).map(([key, value]) => (
+                    <div key={key} className="flex flex-col">
+                        <span className="font-bold text-xl text-slate-100">{value}</span>
+                        <span className="text-xs text-slate-500 uppercase tracking-wider">{key}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const ChartContainer = ({ title, children, filterAction = "Filter" }) => (
+    <div className="bg-slate-800 rounded-xl p-6 shadow-sm h-[320px] md:h-[350px] border border-slate-700">
+        <div className="flex justify-between items-center mb-5">
+            <h3 className="text-lg font-semibold text-slate-100">{title}</h3>
+            <button className="flex items-center gap-2 bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                <LucideFilter className="w-3 h-3"/>
+                <span>{filterAction}</span>
+            </button>
+        </div>
+        <ResponsiveContainer width="100%" height="85%">
+            {children}
+        </ResponsiveContainer>
+    </div>
+);
+
+
+// --- Views ---
+
+const DashboardView = () => {
+    const [metrics, setMetrics] = useState(null);
+    const [agents, setAgents] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const [velocityData, setVelocityData] = useState([]);
+    const { db, appId } = useFirebase();
+
+    // Fetch dashboard metrics
+    useEffect(() => {
+        if (!db) return;
+        const docRef = doc(db, `/artifacts/${appId}/public/data/metrics/dashboardMetrics`);
+        const unsubscribe = onSnapshot(docRef, (doc) => {
+            setMetrics(doc.data());
+        });
+        return () => unsubscribe();
+    }, [db, appId]);
+
+    // Fetch agents
+    useEffect(() => {
+        if (!db) return;
+        const q = query(collection(db, `/artifacts/${appId}/public/data/agents`));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const agentData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAgents(agentData);
+        });
+        return () => unsubscribe();
+    }, [db, appId]);
+
+    // Fetch projects for chart
+    useEffect(() => {
+        if (!db) return;
+        const q = query(collection(db, `/artifacts/${appId}/public/data/projects`));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const projectData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setProjects(projectData);
+            
+            // Generate some fake velocity data based on project count
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            const veloData = months.map((month, index) => ({
+                name: month,
+                velocity: 28 + index * 2 + Math.floor(Math.random() * 5) * (projectData.length || 1),
+            }));
+            setVelocityData(veloData);
+
+        });
+        return () => unsubscribe();
+    }, [db, appId]);
+    
+    if (!metrics) {
+        return <div className="text-center text-slate-400 p-10">Loading Dashboard Data...</div>;
+    }
+
+    return (
+        <div className="animate-fadeIn">
+            <ContentHeader title="Unified Project Dashboard">
+                 <button className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                    <LucideCalendar className="w-4 h-4"/>
+                    <span>Last 7 Days</span>
+                </button>
+                <button className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                    <LucideFilter className="w-4 h-4"/>
+                    <span>All Projects</span>
+                </button>
+            </ContentHeader>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-7">
+                 <MetricCard title="Completed Issues" value={metrics.completedIssues.value} trend={metrics.completedIssues.trend} trendDirection={metrics.completedIssues.trendDirection}>
+                    <span>{metrics.completedIssues.trend}% from last week</span>
+                </MetricCard>
+                <MetricCard title="Deployment Success" value={metrics.deploymentSuccess.value} trend={metrics.deploymentSuccess.trend} trendDirection={metrics.deploymentSuccess.trendDirection} unit="%">
+                    <span>{metrics.deploymentSuccess.trend}% improvement</span>
+                </MetricCard>
+                <MetricCard title="System Uptime" value={metrics.systemUptime.value} trend={metrics.systemUptime.trend} trendDirection={metrics.systemUptime.trendDirection} unit="%" cardStyle="sre">
+                    <span>Within SLO target</span>
+                </MetricCard>
+                <MetricCard title="Active Incidents" value={metrics.activeIncidents.value} trend={metrics.activeIncidents.trend} trendDirection={metrics.activeIncidents.trendDirection}>
+                    <span>{metrics.activeIncidents.trend} resolved today</span>
+                </MetricCard>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-10">
+                <ChartContainer title="Project Progress">
+                     <BarChart data={projects}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                        <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Bar dataKey="progress" name="Completion %">
+                            {projects.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                        </Bar>
+                    </BarChart>
+                </ChartContainer>
+                 <ChartContainer title="Team Velocity">
+                    <LineChart data={velocityData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                        <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Line type="monotone" dataKey="velocity" stroke="#5e6ad2" strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} />
+                    </LineChart>
+                </ChartContainer>
+            </div>
+            
+            <SectionTitle icon={<LucideBot className="w-5 h-5"/>} title="Active AI Agents" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {agents.map(agent => <AgentCard key={agent.id} agent={agent} />)}
+            </div>
+        </div>
+    );
+};
+
+const DevOpsView = () => {
+    const [metrics, setMetrics] = useState(null);
+    const { db, appId } = useFirebase();
+
+    useEffect(() => {
+        if (!db) return;
+        const docRef = doc(db, `/artifacts/${appId}/public/data/metrics/dashboardMetrics`);
+        const unsubscribe = onSnapshot(docRef, (doc) => {
+            setMetrics(doc.data());
+        });
+        return () => unsubscribe();
+    }, [db, appId]);
+    
+    if (!metrics) {
+        return <div className="text-center text-slate-400 p-10">Loading DevOps Center Data...</div>;
+    }
+
+    const pipelineData = [
+      { subject: 'Success Rate', A: 96, B: 99, fullMark: 100 },
+      { subject: 'Speed', A: 85, B: 95, fullMark: 100 },
+      { subject: 'Reliability', A: 90, B: 98, fullMark: 100 },
+      { subject: 'Automation', A: 78, B: 95, fullMark: 100 },
+      { subject: 'Recovery', A: 82, B: 95, fullMark: 100 },
+    ];
+
+
+    return (
+        <div className="animate-fadeIn">
+            <ContentHeader title="DevOps Center">
+                <button className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                    <LucidePlayCircle className="w-4 h-4"/> <span>Run Pipeline</span>
+                </button>
+                <button className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                    <LucidePlus className="w-4 h-4"/> <span>New Environment</span>
+                </button>
+            </ContentHeader>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-7">
+                <MetricCard title="Build Success Rate" value={metrics.buildSuccessRate.value} trend={metrics.buildSuccessRate.trend} trendDirection={metrics.buildSuccessRate.trendDirection} unit="%">
+                    <span>{metrics.buildSuccessRate.trend}% from last week</span>
+                </MetricCard>
+                <MetricCard title="Avg. Deployment Time" value={metrics.avgDeploymentTime.value} trend={metrics.avgDeploymentTime.trend} trendDirection={metrics.avgDeploymentTime.trendDirection} unit="m">
+                    <span>{metrics.avgDeploymentTime.trend}m improvement</span>
+                </MetricCard>
+                <MetricCard title="Infrastructure Changes" value={metrics.infraChanges.value} trend={metrics.infraChanges.trend} trendDirection={metrics.infraChanges.trendDirection}>
+                    <span>All compliant</span>
+                </MetricCard>
+            </div>
+            
+            <SectionTitle icon={<LucideGitBranch className="w-5 h-5"/>} title="CI/CD Pipelines" />
+             <div className="mt-5">
+                <ChartContainer title="Pipeline Performance" filterAction="Last 30 Days">
+                     <RadarChart cx="50%" cy="50%" outerRadius="80%" data={pipelineData}>
+                        <PolarGrid stroke="rgba(255, 255, 255, 0.1)" />
+                        <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Radar name="Current" dataKey="A" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.6} />
+                        <Radar name="Target" dataKey="B" stroke="#5e6ad2" fill="#5e6ad2" fillOpacity={0.4} />
+                        <Legend wrapperStyle={{fontSize: "12px"}}/>
+                    </RadarChart>
+                </ChartContainer>
+            </div>
+        </div>
+    );
+};
+
+const SREView = () => {
+    const [metrics, setMetrics] = useState(null);
+    const { db, appId } = useFirebase();
+
+    useEffect(() => {
+        if (!db) return;
+        const docRef = doc(db, `/artifacts/${appId}/public/data/metrics/dashboardMetrics`);
+        const unsubscribe = onSnapshot(docRef, (doc) => {
+            setMetrics(doc.data());
+        });
+        return () => unsubscribe();
+    }, [db, appId]);
+    
+    if (!metrics) {
+        return <div className="text-center text-slate-400 p-10">Loading SRE Operations Data...</div>;
+    }
+
+    const healthData = [
+        { name: '00:00', cpu: 32, memory: 45 }, { name: '04:00', cpu: 28, memory: 42 },
+        { name: '08:00', cpu: 35, memory: 48 }, { name: '12:00', cpu: 42, memory: 55 },
+        { name: '16:00', cpu: 48, memory: 62 }, { name: '20:00', cpu: 38, memory: 58 },
+        { name: '00:00', cpu: 30, memory: 50 },
+    ];
+
+    const incidentData = [
+        { name: 'Week 1', incidents: 4 }, { name: 'Week 2', incidents: 3 },
+        { name: 'Week 3', incidents: 5 }, { name: 'Week 4', incidents: 2 },
+    ];
+    
+    return (
+        <div className="animate-fadeIn">
+            <ContentHeader title="SRE Operations Center">
+                <button className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-2 text-sm text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors">
+                    <Flame className="w-4 h-4"/> <span>Active Incidents ({metrics.activeIncidents.value})</span>
+                </button>
+                 <button className="flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-sm text-slate-300 hover:bg-slate-700 hover:text-white transition-colors">
+                    <LucideSlidersHorizontal className="w-4 h-4"/> <span>SLO Dashboard</span>
+                </button>
+            </ContentHeader>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-7">
+                 <MetricCard title="System Uptime" value={metrics.systemUptime.value} trend={metrics.systemUptime.trend} trendDirection="stable" unit="%" cardStyle="sre">
+                    <span>Within SLO target</span>
+                </MetricCard>
+                <MetricCard title="Error Budget" value={metrics.errorBudget.value} trend={metrics.errorBudget.trend} trendDirection="down" unit="%" cardStyle="sre">
+                    <span>{metrics.errorBudget.trend}% used this week</span>
+                </MetricCard>
+                <MetricCard title="MTTR (Mean Time to Resolve)" value={metrics.mttr.value} trend={metrics.mttr.trend} trendDirection="down" unit="m" cardStyle="sre">
+                    <span>{metrics.mttr.trend}m improvement</span>
+                </MetricCard>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <ChartContainer title="System Health Monitoring" filterAction="Last 24h">
+                    <LineChart data={healthData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                        <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Legend wrapperStyle={{fontSize: "12px"}}/>
+                        <Line type="monotone" dataKey="cpu" name="CPU Usage" stroke="#10b981" strokeWidth={2} />
+                        <Line type="monotone" dataKey="memory" name="Memory Usage" stroke="#3b82f6" strokeWidth={2} />
+                    </LineChart>
+                </ChartContainer>
+                <ChartContainer title="Incident Trends" filterAction="Last 30 Days">
+                    <BarChart data={incidentData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                        <XAxis dataKey="name" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                        <Tooltip
+                            contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
+                            labelStyle={{ color: '#f1f5f9' }}
+                        />
+                        <Bar dataKey="incidents" fill="rgba(239, 68, 68, 0.7)" />
+                    </BarChart>
+                </ChartContainer>
+            </div>
+        </div>
+    );
+};
+
+const PlaceholderView = ({ title, icon }) => {
+    const Icon = icon || LucideCircle;
+    return (
+        <div className="flex flex-col items-center justify-center h-full text-slate-500 animate-fadeIn">
+            <Icon className="w-16 h-16 mb-4"/>
+            <h2 className="text-2xl font-semibold text-slate-400 mb-2">{title}</h2>
+            <p>This view is under construction.</p>
+        </div>
+    );
+};
+
+
+const ContentHeader = ({ title, children }) => (
+    <div className="flex flex-col md:flex-row justify-between md:items-center mb-7 gap-4">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-violet-400 text-transparent bg-clip-text">
+            {title}
+        </h1>
+        <div className="flex items-center gap-3.5 flex-wrap">
+            {children}
+        </div>
+    </div>
+);
+
+const SectionTitle = ({ icon, title }) => (
+    <div className="flex items-center gap-3 mb-5 mt-10">
+        <div className="w-9 h-9 flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-white">
+            {icon}
+        </div>
+        <h2 className="text-2xl font-semibold text-slate-100">{title}</h2>
+    </div>
+);
+
+const CommandPalette = ({ isOpen, onClose }) => {
+    const commands = [
+        { group: "DevOps", name: "Run CI/CD Pipeline", desc: "Execute the deployment pipeline for current project", icon: LucidePlayCircle, shortcut: "⌘R" },
+        { group: "DevOps", name: "Deploy to Production", desc: "Initiate production deployment with approval workflow", icon: LucideCloudUpload, shortcut: "" },
+        { group: "SRE", name: "Check System Health", desc: "Run comprehensive system diagnostics", icon: LucideHeartPulse, shortcut: "⌘H" },
+        { group: "SRE", name: "View Active Incidents", desc: "Show all currently open incidents", icon: Flame, shortcut: "" },
+        { group: "AI", name: "Generate IaC Template", desc: "Create infrastructure as code configuration", icon: LucideCode, shortcut: "" },
+        { group: "AI", name: "Enable Security Scanning", desc: "Run automated security checks on infrastructure", icon: LucideShield, shortcut: "" },
+    ];
+    const groupedCommands = commands.reduce((acc, cmd) => {
+        if (!acc[cmd.group]) acc[cmd.group] = [];
+        acc[cmd.group].push(cmd);
+        return acc;
+    }, {});
+
+
+    if (!isOpen) return null;
+
+    return (
+        <>
+            <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50" onClick={onClose}></div>
+            <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] max-w-[90%] bg-slate-800 rounded-xl shadow-2xl z-50 border border-slate-700 animate-fadeIn">
+                <div className="p-3 border-b border-slate-700">
+                    <input
+                        type="text"
+                        placeholder="What would you like to do?"
+                        className="w-full bg-transparent text-lg text-slate-100 placeholder:text-slate-500 focus:outline-none px-3 py-2"
+                    />
+                </div>
+                <div className="max-h-[400px] overflow-y-auto p-2">
+                    {Object.entries(groupedCommands).map(([group, items]) => (
+                        <div key={group} className="mb-2">
+                            <h4 className="text-xs font-semibold uppercase text-slate-500 px-3 py-2">{group} Commands</h4>
+                            {items.map((cmd, index) => {
+                                const Icon = cmd.icon;
+                                return (
+                                <div key={index} className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-700/50 cursor-pointer border-l-2 border-transparent hover:border-indigo-500">
+                                    <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-slate-700 text-indigo-400">
+                                        <Icon className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-semibold text-slate-200">{cmd.name}</p>
+                                        <p className="text-sm text-slate-400">{cmd.desc}</p>
+                                    </div>
+                                    {cmd.shortcut && <kbd className="text-xs text-slate-500 bg-slate-700 px-2 py-1 rounded-md font-mono">{cmd.shortcut}</kbd>}
+                                </div>
+                                )
+                            })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </>
+    );
+};
+
+// --- Main App Component ---
+function App() {
+    const { isAuthReady, user, db, appId } = useFirebase();
+    const [activeView, setActiveView] = useState('dashboard');
+    const [isCommandPaletteOpen, setCommandPaletteOpen] = useState(false);
+    
+    // Seed database on initial load
+    useEffect(() => {
+        if (db && user) {
+            seedDatabase(db, appId, user.uid);
+        }
+    }, [db, user, appId]);
+
+    // Keyboard shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setCommandPaletteOpen(prev => !prev);
+            }
+             if (e.key === 'Escape') {
+                setCommandPaletteOpen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
+
+    if (!isAuthReady) {
+        return <AppLoader />;
+    }
+    
+    const renderView = () => {
+        switch(activeView) {
+            case 'dashboard': return <DashboardView />;
+            case 'devops': return <DevOpsView />;
+            case 'sre': return <SREView />;
+            case 'issues': return <PlaceholderView title="Project Issues" icon={LucideCheckSquare} />;
+            case 'agents': return <PlaceholderView title="AI Agents Management" icon={LucideBot} />;
+            default: return <DashboardView />;
+        }
+    };
+
+    return (
+        <div className="h-screen w-full bg-slate-900 text-slate-200 grid grid-rows-[60px_1fr] grid-cols-1 md:grid-cols-[260px_1fr] overflow-hidden">
+            <Header onCommandPaletteOpen={() => setCommandPaletteOpen(true)}/>
+            <Sidebar activeView={activeView} setActiveView={setActiveView}/>
+            <main className="overflow-y-auto p-7">
+                {renderView()}
+            </main>
+            <CommandPalette isOpen={isCommandPaletteOpen} onClose={() => setCommandPaletteOpen(false)} />
+        </div>
+    );
+}
+
+// Default export wraps the App with the Firebase provider.
+export default function MomentumAppWrapper() {
+    return (
+        <FirebaseProvider>
+            <App />
+        </FirebaseProvider>
+    );
+}
